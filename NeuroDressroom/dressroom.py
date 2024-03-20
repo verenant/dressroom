@@ -3,7 +3,7 @@ import replicate
 import base64
 import asyncio
 
-def send_model():
+async def send_model():
     # Use a breakpoint in the code line below to debug your script.
 #https://replicate.com/viktorfa/oot_diffusion_with_mask?prediction=2heuwstbcqosx7xtgo56s23lb4
     #https://huggingface.co/spaces/levihsu/OOTDiffusion
@@ -28,7 +28,8 @@ def send_model():
         "viktorfa/oot_diffusion_with_mask:c890e02d8180bde7eeed1a138217ee154d8cdd8769a29f02bd51fea33d268385",
         input=input
     )
-    print(output)
+    print(output[0])
+    return output[0]
 
 # Press the green button in the gutter to run the script.
 

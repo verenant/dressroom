@@ -9,11 +9,12 @@ from aiogram import Bot, Dispatcher, Router, types, F
 from aiogram.enums import ParseMode
 from aiogram.filters import CommandStart, Command
 from aiogram.types import Message
-from aiogram.utils.keyboard import ReplyKeyboardBuilder
+from aiogram.utils.keyboard import ReplyKeyboardBuilder, InlineKeyboardBuilder
 from aiogram.utils.markdown import hbold
 
 from aiogram.types import FSInputFile, URLInputFile, BufferedInputFile
 
+from NeuroDressroom import dressroom
 # Bot token can be obtained via https://t.me/BotFather
 TOKEN = '7157055794:AAEmA2Bx5LO7FNUeNHDqlBjvXhoRtS8tgH4'
 
@@ -53,21 +54,25 @@ async def echo_handler(message: types.Message) -> None:
         await message.answer("Привет!\nЯ бот, помогающий с примеркой!\nОтправь мне любое сообщение, а я тебе обязательно отвечу.")  # Так как код работает асинхронно, то обязательно пишем await.")
  """
 
-@dp.message(Command("special_buttons"))
+#включение спец кнопок
+@dp.message(Command("buttons"))
 async def cmd_special_buttons(message: types.Message):
     builder = ReplyKeyboardBuilder()
     # метод row позволяет явным образом сформировать ряд
     # из одной или нескольких кнопок. Например, первый ряд
     # будет состоять из двух кнопок...
+    """
     builder.row(
         types.KeyboardButton(text="Запросить геолокацию", request_location=True),
         types.KeyboardButton(text="Запросить контакт", request_contact=True)
     )
+    """
     # ... второй из одной ...
     builder.row(types.KeyboardButton(
-        text="Создать викторину",
+        text="Запустить примерку",
         request_poll=types.KeyboardButtonPollType(type="quiz"))
     )
+    """
     # ... а третий снова из двух
     builder.row(
         types.KeyboardButton(
@@ -86,6 +91,7 @@ async def cmd_special_buttons(message: types.Message):
             )
         )
     )
+    """
     # WebApp-ов пока нет, сорри :(
 
     await message.answer(
@@ -93,9 +99,33 @@ async def cmd_special_buttons(message: types.Message):
         reply_markup=builder.as_markup(resize_keyboard=True),
     )
 
+#=====================================================================
+@dp.message(Command("go"))
+async def create_button_dressroom(message: types.Message):
+    builder = InlineKeyboardBuilder()
+    builder.add(types.InlineKeyboardButton(
+        text="Нажмите для начала примерки",
+        callback_data="run")
+    )
+    await message.answer(
+        "Если хотите начать заново, то используйте /delete (сделать кнопку сброса)",
+        reply_markup=builder.as_markup()
+    )
 
+
+@dp.callback_query(F.data == "run")
+async def go_dressroom(callback: types.CallbackQuery):
+    #await callback.message.answer(str(1))
+
+    await dressroom.send_model()
+
+
+
+#=====================================================================
+
+# Загрузка изображений в бот (в чат)
 @dp.message(Command('Images'))
-async def upload_photo(message: Message):
+async def upload_photo(message: Message, photo_url : str):
     # Сюда будем помещать file_id отправленных файлов, чтобы потом ими воспользоваться
     file_ids = []
 
@@ -103,6 +133,8 @@ async def upload_photo(message: Message):
     # открытием файла через `open()`. Но, вообще говоря, этот способ
     # лучше всего подходит для отправки байтов из оперативной памяти
     # после проведения каких-либо манипуляций, например, редактированием через Pillow
+
+
     with open("images/jacket.jpg", "rb") as image_from_buffer:
         result = await message.answer_photo(
             BufferedInputFile(
@@ -122,7 +154,8 @@ async def upload_photo(message: Message):
     file_ids.append(result.photo[-1].file_id)
 
     # Отправка файла по ссылке
-    image_from_url = URLInputFile("https://picsum.photos/seed/groosha/400/300")
+    image_from_url = URLInputFile(photo_url)
+    #result = await message.answer_photo(
     result = await message.answer_photo(
         image_from_url,
         caption="Изображение по ссылке"
@@ -146,7 +179,7 @@ async def download_photo(message: Message, bot: Bot):
 
     )
 
-
+#очистка папки пользователя по команде /delete
 @dp.message(Command('delete'))
 def delete_photo(message: Message):
     if (len(os.listdir("images/"+ message.from_user.username))) > 0:
