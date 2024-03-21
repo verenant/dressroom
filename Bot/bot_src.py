@@ -36,7 +36,7 @@ async def command_start_handler(message: Message) -> None:
         os.mkdir("images/"+message.from_user.username)
     except:
         pass
-    await message.answer(f"Hello, {hbold(message.from_user.full_name)}!\n Для создания вашего изображения с одеждой загрузите две фотографии:\n - свою \n - одежды\n Подождите несколько минут")
+    await message.answer(f"Hello, {hbold(message.from_user.full_name)}!\n Для создания вашего изображения с одеждой загрузите две фотографии:\n - свою \n - одежды\n.\n Затем используйте команду /go \n После запуска подождите примерно несколько минут (~3).")
 
 """
 @dp.message()
@@ -53,6 +53,7 @@ async def echo_handler(message: types.Message) -> None:
         # But not all the types is supported to be copied so need to handle it
         await message.answer("Привет!\nЯ бот, помогающий с примеркой!\nОтправь мне любое сообщение, а я тебе обязательно отвечу.")  # Так как код работает асинхронно, то обязательно пишем await.")
  """
+
 
 #включение спец кнопок
 @dp.message(Command("buttons"))
@@ -100,12 +101,17 @@ async def cmd_special_buttons(message: types.Message):
     )
 
 #=====================================================================
+
+
 @dp.message(Command("go"))
 async def create_button_dressroom(message: types.Message):
     builder = InlineKeyboardBuilder()
     builder.add(types.InlineKeyboardButton(
         text="Нажмите для начала примерки",
-        callback_data="run")
+        #callback_data="run")
+        callback_data="run",
+
+        )
     )
     await message.answer(
         "Если хотите начать заново, то используйте /delete (сделать кнопку сброса)",
@@ -116,14 +122,24 @@ async def create_button_dressroom(message: types.Message):
 @dp.callback_query(F.data == "run")
 async def go_dressroom(callback: types.CallbackQuery):
     #await callback.message.answer(str(1))
-
-    await dressroom.send_model()
+    if len(os.listdir("images/"+callback.message.chat.username)) != 2 :
+        #удалить папку
+        #создать папку
+        #отправить текст пользователю
+        await callback.message.answer("Ошибка в количестве файлов.\n Для создания вашего изображения с одеждой загрузите две фотографии:\n - свою \n - одежды\n Подождите примерно несколько минут (~3).")
+    #photo_url =
+    await callback.message.answer_photo(
+        #URLInputFile(str(dressroom.send_model(callback.message.from_user.username))), # так передается имя бота
+        URLInputFile(str(dressroom.send_model(callback.message.chat.username))),  # так передается имя Пользователя
+        caption="Изображение по ссылке"
+    )
 
 
 
 #=====================================================================
 
 # Загрузка изображений в бот (в чат)
+
 @dp.message(Command('Images'))
 async def upload_photo(message: Message, photo_url : str):
     # Сюда будем помещать file_id отправленных файлов, чтобы потом ими воспользоваться
